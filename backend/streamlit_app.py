@@ -30,18 +30,22 @@ st.markdown(
         color: #f3f4f6;
     }
     
-    /* Input field styling */
-    div[data-baseweb="textarea"], div[data-baseweb="input"] {
+    /* Input field styling (targeting wrappers and inner controls) */
+    div[data-baseweb="textarea"], 
+    div[data-baseweb="input"],
+    div[data-baseweb="textarea"] textarea, 
+    div[data-baseweb="input"] input,
+    textarea, 
+    input {
         background-color: #1e293b !important;
-        border: 1px solid #334155 !important;
+        color: #f3f4f6 !important;
         border-radius: 8px !important;
     }
-    textarea {
-        color: #f3f4f6 !important;
-        font-family: 'Courier New', Courier, monospace !important;
+    div[data-baseweb="textarea"], div[data-baseweb="input"] {
+        border: 1px solid #334155 !important;
     }
-    input {
-        color: #f3f4f6 !important;
+    textarea {
+        font-family: 'Courier New', Courier, monospace !important;
     }
     
     /* Header/Text elements */
