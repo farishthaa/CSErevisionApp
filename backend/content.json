@@ -1,0 +1,136 @@
+{
+  "days": {
+    "day_1": {
+      "title": "JVM Memory, Stack vs Heap, Pass-by-Value, & Big-O",
+      "topics": ["JVM Memory", "Stack & Heap", "Pass-by-Value", "Big-O Proofs"],
+      "difficulty": "Medium",
+      "estimated_time": "60 mins",
+      "learning_material": "# Day 1: JVM Memory Architecture, Stack vs Heap, Pass-by-Value, and Big-O Proofs\n\nWelcome to Day 1 of the 90-day SDE Revision Plan. Today, we establish a core foundation: runtime memory execution models and algorithmic complexity proofs.\n\n---\n\n## 1. JVM Runtime Memory Architecture\n\nThe Java Virtual Machine (JVM) divides process memory into several runtime data areas to manage execution and garbage collection:\n\n```text\n+-------------------------------------------------------------+\n|                        JVM MEMORY                           |\n+-------------------------------------------------------------+\n| [Shared Areas]                                              |\n|   +-------------------+    +----------------------------+   |\n|   |    HEAP AREA      |    |       METASPACE            |   |\n|   | (Objects & Arrays)|    | (Class Metadata, Constants)|   |\n|   +-------------------+    +----------------------------+   |\n+-------------------------------------------------------------+\n| [Thread-Local Areas (Allocated per Thread)]                 |\n|   +-------------------+    +----------------------------+   |\n|   |    JVM STACKS     |    |     PROGRAM COUNTER (PC)   |   |\n|   | (Frames, Locals)  |    | (Current Instruction Addr) |   |\n|   +-------------------+    +----------------------------+   |\n|   |  NATIVE STACKS    |                                     |\n|   | (JNI C/C++ Calls) |                                     |\n|   +-------------------+                                     |\n+-------------------------------------------------------------+\n```\n\n### Thread-Local Areas:\n1. **JVM Stack**: Stores frame objects. Created when a thread starts. A new frame is pushed onto the stack for each method invocation and popped when it returns.\n2. **Program Counter (PC) Register**: Stores the address of the current JVM instruction being executed.\n3. **Native Method Stack**: Used for native methods written in C/C++ (accessed via JNI).\n\n### Shared Areas:\n1. **Heap Area**: Created at JVM start-up. Stores all object instances and arrays. Highly regulated by the Garbage Collector (GC).\n2. **Metaspace (Method Area)**: Stores class-level definitions, runtime constant pool, field and method data, and method bytecodes. Kept in native memory (outside the JVM heap limit) since Java 8.\n\n---\n\n## 2. Stack vs Heap Deep Dive\n\nUnderstanding memory layout is crucial for writing allocation-optimal algorithms:\n\n| Feature | Stack Memory | Heap Memory |\n| :--- | :--- | :--- |\n| **Access Speed** | Extremely fast (Last-In-First-Out, hardware-pointer supported) | Slower (requires pointer reference resolution and traversal) |\n| **Lifetime** | Tied to thread execution and method frame lifecycle | Exists throughout application lifetime until Garbage Collected |\n| **Allocation** | Managed automatically by OS/CPU instructions | Managed programmatically (allocations) and by GC (deallocations) |\n| **Contents** | Primitive local variables and reference addresses (pointers) | Object instances, class instances, and arrays |\n| **Failures** | `java.lang.StackOverflowError` (deep recursion) | `java.lang.OutOfMemoryError` (space exhausted, leaks) |\n\n---\n\n## 3. Java Pass-by-Value Proof\n\nJava is **strictly pass-by-value**. It never passes objects by reference. When an object is passed to a method, a copy of the *object reference variable* (pointer address) is passed by value.\n\n### Code Demonstration:\n```java\npublic class MemoryProof {\n    public static void main(String[] args) {\n        Dog aDog = new Dog(\"Max\"); // Assume heap address: 0x7FFF\n        changeName(aDog);\n        System.out.println(aDog.getName()); // Prints \"Max\", NOT \"Fifi\"\n    }\n\n    public static void changeName(Dog dog) {\n        // dog variable is a COPY of reference 'aDog' containing address: 0x7FFF\n        dog = new Dog(\"Fifi\"); // dog now holds new address 0x9AAA on the heap\n        // The original 'aDog' in main() still holds 0x7FFF! Name is unchanged in caller.\n    }\n}\n```\n\n---\n\n## 4. Big-O Complexity and Theoretical Proofs\n\nBig-O notation ($O$) represents the asymptotic upper bound of an algorithm's growth rate. Formally:\n\n$$\\text{Definition: } f(n) = O(g(n)) \\iff \\exists c > 0, n_0 > 0 \\text{ such that } 0 \\le f(n) \\le c \\cdot g(n) \\quad \\forall n \\ge n_0$$\n\n### Proof Example:\nProve that $f(n) = 3n^2 + 5n + 12$ is $O(n^2)$.\n\n*Proof:* \nWe need to find constants $c > 0$ and $n_0 > 0$ such that $3n^2 + 5n + 12 \\le c \\cdot n^2$ for all $n \\ge n_0$.\n\nFor $n \\ge 1$:\n- $5n \\le 5n^2$\n- $12 \\le 12n^2$\n\nSubstituting these, we get:\n$$3n^2 + 5n + 12 \\le 3n^2 + 5n^2 + 12n^2 = 20n^2$$\n\nThus, if we choose $c = 20$ and $n_0 = 1$, the inequality holds:\n$$3n^2 + 5n + 12 \\le 20n^2 \\quad \\forall n \\ge 1$$\n\nTherefore, by definition, $3n^2 + 5n + 12 = O(n^2)$.\n\n---\n\n## Today's Challenge:\nWrite a memory simulator program (below) that acts as a JVM stack and heap. Model variable frames, assignments, object allocations, and GC references, proving your understanding of reference management and complexity.",
+      "coding_challenge": {
+        "title": "JVM Memory & Reference Simulator",
+        "description": "Implement a Python class `MemorySimulator` that replicates thread stacks, heap allocations, and reference scoping:\n\n### Requirements:\n1. `push_stack_frame(method_name)`: Pushes a new execution frame onto the stack. A frame is a dict containing `{'method': method_name, 'locals': {}}`.\n2. `pop_stack_frame()`: Pops the top frame. Any references stored in it are destroyed.\n3. `allocate_heap(obj_type, data_dict)`: Creates an object on the heap, returns a numeric address key (incrementing from `1000`). Initial object `ref_count` is 0.\n4. `assign_ref(var_name, address)`: Binds a local variable in the active stack frame to a heap address. Increments the object's reference count. If the variable was previously pointing to another address, decrement that object's ref count.\n5. `check_memory_leaks()`: Detects heap leaks. Return a list of all heap object addresses that have an active reference count of 0 (orphans).\n\n### Theoretical Proof Prompt:\n1. Prove the time complexity of your `check_memory_leaks` implementation in Big-O notation.\n2. Using your memory simulator's logic, explain why changing a reference inside a method frame doesn't modify the caller's reference variable.",
+        "starter_code": "class MemorySimulator:\n    def __init__(self):\n        self.stack = []  # List of frames: {'method': str, 'locals': dict}\n        self.heap = {}   # Address mapping: {int: {'type': str, 'data': dict, 'ref_count': int}}\n        self.address_counter = 1000\n        \n    def push_stack_frame(self, method_name: str):\n        # TODO: Implement stack frame allocation\n        pass\n        \n    def pop_stack_frame(self):\n        # TODO: Implement frame removal and decrement ref counts\n        pass\n        \n    def allocate_heap(self, obj_type: str, data: dict) -> int:\n        # TODO: Allocate space in heap and return address\n        return 0\n        \n    def assign_ref(self, var_name: str, address: int):\n        # TODO: Assign active stack local variable to point to heap address\n        pass\n        \n    def check_memory_leaks(self) -> list:\n        # TODO: Return list of heap addresses with no active references in stack frames\n        return []"
+      }
+    },
+    "day_2": {
+      "title": "Arrays, Dynamic Arrays, & Pointer Arithmetic",
+      "topics": ["Array Layout", "Amortized Analysis", "Pointer Arithmetic"],
+      "difficulty": "Easy",
+      "estimated_time": "30 mins",
+      "learning_material": "# Day 2: Arrays and Dynamic Arrays\n\nStudy static versus dynamic arrays, resizing strategies (amortized $O(1)$ insertions), and direct pointer offsets.",
+      "coding_challenge": {
+        "title": "Dynamic Array Implementation",
+        "description": "Implement a resizing array class `DynamicArray` that doubles in size when full, maintaining element access and deletion offsets.",
+        "starter_code": "class DynamicArray:\n    def __init__(self, capacity=2):\n        self.capacity = capacity\n        self.size = 0\n        self.data = [None] * capacity\n        \n    def append(self, val):\n        # TODO: Append element, resize if necessary\n        pass"
+      }
+    },
+    "day_3": {
+      "title": "Linked Lists (Singly & Doubly)",
+      "topics": ["Node Structures", "Sentinel Nodes", "Pointer Swapping"],
+      "difficulty": "Easy",
+      "estimated_time": "45 mins",
+      "learning_material": "# Day 3: Linked Lists\n\nStudy pointer manipulations in singly and doubly linked lists, sentinel node benefits, and list reversal.",
+      "coding_challenge": {
+        "title": "Reverse Doubly Linked List",
+        "description": "Implement a function to reverse a doubly linked list in place.",
+        "starter_code": "class Node:\n    def __init__(self, val):\n        self.val = val\n        self.next = None\n        self.prev = None\n\ndef reverse_list(head):\n    # TODO: Reverse doubly linked list in place\n    return None"
+      }
+    },
+    "day_4": {
+      "title": "Recursion & Call Stack Mechanics",
+      "topics": ["Stack Overflow", "Base Cases", "Tail Recursion"],
+      "difficulty": "Medium",
+      "estimated_time": "45 mins",
+      "learning_material": "# Day 4: Recursion Mechanics\n\nAnalyze call stack frames, recursive branching factor, and Tail Call Optimization (TCO).",
+      "coding_challenge": {
+        "title": "Stack-Safe Recursion Simulation",
+        "description": "Convert a deeply recursive DFS structure into an iterative stack implementation to prevent StackOverflow errors.",
+        "starter_code": "def iterative_dfs(node):\n    # TODO: Replicate DFS recursion with an explicit list stack\n    pass"
+      }
+    },
+    "day_5": {
+      "title": "Asymptotic Analysis & Master Theorem",
+      "topics": ["Big-O / Theta / Omega", "Master Theorem", "Limits Proofs"],
+      "difficulty": "Hard",
+      "estimated_time": "50 mins",
+      "learning_material": "# Day 5: Master Theorem & Growth Rates\n\nSolve recurrences of the form $T(n) = aT(n/b) + f(n)$ and mathematically classify complex functions.",
+      "coding_challenge": {
+        "title": "Recurrence Solver Analysis",
+        "description": "Write a solver that computes the Master Theorem case (Case 1, 2, or 3) for a, b, and the power of f(n).",
+        "starter_code": "def solve_master_theorem(a, b, f_power):\n    # TODO: Return case number and time complexity\n    return ''"
+      }
+    },
+    "day_6": {
+      "title": "Stacks & Queues (Array vs Linked List)",
+      "topics": ["LIFO / FIFO", "Circular Queues", "Monotonic Stack"],
+      "difficulty": "Easy",
+      "estimated_time": "30 mins",
+      "learning_material": "# Day 6: Stacks and Queues\n\nStudy circular queue layout, stack applications, and monotonic stack concepts.",
+      "coding_challenge": {
+        "title": "Monotonic Stack Implementation",
+        "description": "Implement a class that outputs the next greater element for each item in an array in linear time.",
+        "starter_code": "def next_greater_element(nums):\n    # TODO: Use a monotonic stack for O(N) evaluation\n    return []"
+      }
+    },
+    "day_7": {
+      "title": "Week 1 Review & Practical Coding Challenge",
+      "topics": ["DSA Basics Review", "Comprehensive Assessment"],
+      "difficulty": "Medium",
+      "estimated_time": "60 mins",
+      "learning_material": "# Day 7: Week 1 Integration\n\nReview Week 1: Memory, complexity, basic arrays, lists, queues, stacks.",
+      "coding_challenge": {
+        "title": "Unified Queue and Memory Simulator",
+        "description": "Create a queue-backed job scheduler that simulates job stack frames and processes memory parameters.",
+        "starter_code": "def schedule_and_track_memory(job_queue):\n    # TODO: Implement job scheduler\n    pass"
+      }
+    },
+    "day_14": {
+      "title": "Week 2 Review & Mini-Test",
+      "topics": ["Sorting & Searching Review", "Algorithmic Efficiency"],
+      "difficulty": "Medium",
+      "estimated_time": "60 mins",
+      "learning_material": "# Day 14: Week 2 Integration\n\nReview Week 2: Binary search variants, sorting complexity, sliding windows, and hashing.",
+      "coding_challenge": {
+        "title": "Sliding Window Maximum",
+        "description": "Given an array and sliding window size k, find the maximum element in each window using a deque in O(N).",
+        "starter_code": "def max_sliding_window(nums, k):\n    # TODO: Solve in O(N) time complexity\n    return []"
+      }
+    },
+    "day_30": {
+      "title": "Month 1 Review & Capstone Challenge",
+      "topics": ["Core DSA Review", "Advanced Graph Algorithms", "Tree Operations"],
+      "difficulty": "Hard",
+      "estimated_time": "90 mins",
+      "learning_material": "# Day 30: Month 1 DSA Review\n\nReview sorting, hashing, trees, graphs, BFS, DFS, Dijkstra's algorithm, and Kruskal's MST.",
+      "coding_challenge": {
+        "title": "Dijkstra's Shortest Path",
+        "description": "Given a weighted directed graph, find the shortest path from a source node to all other nodes using a min-heap.",
+        "starter_code": "def dijkstra(graph, start):\n    # TODO: Implement Dijkstra's algorithm\n    return {}"
+      }
+    },
+    "day_60": {
+      "title": "Month 2 Review & Dynamic Programming Capstone",
+      "topics": ["Dynamic Programming", "Bitmasking", "Concurrency Models"],
+      "difficulty": "Hard",
+      "estimated_time": "90 mins",
+      "learning_material": "# Day 60: Month 2 Systems and DP Review\n\nReview Knapsack, Edit Distance, concurrency threads, race conditions, locks, and thread synchronization.",
+      "coding_challenge": {
+        "title": "Longest Common Subsequence (DP)",
+        "description": "Implement a space-optimized LCS calculation using dynamic programming.",
+        "starter_code": "def lcs(text1, text2):\n    # TODO: Return length of LCS in O(min(M, N)) auxiliary space\n    return 0"
+      }
+    },
+    "day_90": {
+      "title": "Month 3 Review & Senior Mock Interview Capstone",
+      "topics": ["System Design Architecture", "CAP Theorem", "SDE Final Polish"],
+      "difficulty": "Hard",
+      "estimated_time": "120 mins",
+      "learning_material": "# Day 90: Final Portal Capstone\n\nCongratulations on completing the 90-day SDE Preparation syllabus! Review large-scale system design (CDN, Sharding, Load Balancers, CAP Theorem, microservice patterns).",
+      "coding_challenge": {
+        "title": "Distributed Rate Limiter (Token Bucket)",
+        "description": "Implement a thread-safe token bucket rate limiter class with configuration for leak rate and bucket capacity.",
+        "starter_code": "class TokenBucketRateLimiter:\n    def __init__(self, capacity, leak_rate):\n        self.capacity = capacity\n        self.leak_rate = leak_rate\n        self.tokens = capacity\n        \n    def allow_request(self) -> bool:\n        # TODO: Thread-safe calculation of remaining tokens\n        return True"
+      }
+    }
+  }
+}

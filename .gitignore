@@ -1,0 +1,30 @@
+# Gitignore file for SDE Revision App
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Local Environment variables (containing secrets and API keys)
+.env
+.env*.local
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Streamlit logs/cache
+.streamlit/config.toml (only commit if you want shared defaults, otherwise ignore)
+*.log

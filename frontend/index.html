@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDE Revision Portal - 90-Day Challenge</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        slate: {
+                            950: '#070a13',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#1f2937',
+                        },
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Supabase Client JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <!-- CSS Custom Scrollbars and Glassmorphic overlays -->
+    <style>
+        body {
+            background-color: #070a13;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070a13;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        
+        /* Markdown code/table layouts */
+        .prose code {
+            font-family: 'Fira Code', monospace;
+            background-color: #1e293b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #f43f5e;
+            font-size: 0.9em;
+        }
+        .prose pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .prose th, .prose td {
+            border: 1px solid #374151;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .prose th {
+            background-color: #111827;
+            color: #818cf8;
+        }
+        .prose tr:nth-child(even) {
+            background-color: #0b0f19;
+        }
+        .prose h1, .prose h2, .prose h3 {
+            color: #e2e8f0;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .prose h1 { font-size: 1.8rem; border-bottom: 1px solid #1f2937; padding-bottom: 0.5rem; }
+        .prose h2 { font-size: 1.4rem; }
+        .prose h3 { font-size: 1.15rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; color: #cbd5e1; }
+        .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style-type: unset; color: #cbd5e1; }
+        
+        /* Glassmorphism Classes */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Tab transitions */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased h-screen flex flex-col md:flex-row">
+
+    <!-- Mobile Header/Navigation Trigger -->
+    <div class="md:hidden w-full bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between z-50">
+        <div class="flex items-center gap-2">
+            <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+            </div>
+            <span class="font-extrabold text-lg bg-gradient-to-r from-indigo-400 to-sky-400 bg-clip-text text-transparent">SDE Portal</span>
+        </div>
+        <button id="mobile-sidebar-toggle" class="p-2 text-slate-400 hover:text-white focus:outline-none">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Element -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-80 bg-slate-900/90 md:bg-slate-900/40 border-r border-slate-800 flex flex-col z-40 transform -translate-x-full md:translate-x-0 md:static md:w-80 transition-transform duration-300 ease-in-out">
+        <!-- Sidebar Brand -->
+        <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-600/90 rounded-xl text-white shadow-lg shadow-indigo-600/20">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-400 bg-clip-text text-transparent">SDE Revision</h1>
+                    <p class="text-xs text-indigo-400 font-medium">90-Day Prep Curriculum</p>
+                </div>
+            </div>
+            <button id="close-sidebar-mobile" class="md:hidden p-1.5 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Progress Tracker Card -->
+        <div class="p-4 mx-4 mt-4 rounded-xl glass-card bg-slate-950/50">
+            <div class="flex items-center justify-between text-sm mb-2">
+                <span class="text-slate-400 font-medium">Challenge Progress</span>
+                <span id="progress-percent" class="text-indigo-400 font-bold">0 / 90 (0%)</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2">
+                <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-sky-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Days Filter Search -->
+        <div class="px-4 pt-4 pb-2">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-500"></i>
+                <input id="day-search" type="text" placeholder="Search days, topics..." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-indigo-500 text-slate-200 transition-colors placeholder:text-slate-600">
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation List (Scrollable) -->
+        <nav id="days-nav" class="flex-1 overflow-y-auto px-4 py-2 space-y-4">
+            <!-- Dynamic elements will be appended here via Javascript -->
+        </nav>
+        
+        <!-- Bottom Config Row -->
+        <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/20">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700" id="user-avatar-initial">
+                    S
+                </div>
+                <div class="truncate w-32">
+                    <p id="nav-username" class="text-xs font-semibold truncate text-slate-300">Default Candidate</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold" id="db-status-badge">Local Cache Only</p>
+                </div>
+            </div>
+            <button id="open-settings-btn" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/50 transition-colors" title="Settings & Database Sync">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-950">
+        <!-- Main Top Bar -->
+        <header class="h-16 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 glass-card">
+            <div class="flex items-center gap-3">
+                <h2 id="current-day-title" class="font-bold text-lg text-slate-200">Day 1: Loading...</h2>
+                <span id="current-day-difficulty" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-950 text-indigo-400 border border-indigo-900/50">Medium</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="day-completion-badge" class="hidden items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Passed
+                </span>
+                <button id="quick-sync-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-semibold transition-all">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="sync-icon"></i> Sync Progress
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Navigation Tabs -->
+        <div class="px-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/20 shrink-0">
+            <div class="flex gap-6">
+                <button data-tab="learn-tab" class="tab-trigger py-3 font-semibold text-sm border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition-all">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> Learn Syllabus
+                </button>
+                <button data-tab="practice-tab" class="tab-trigger py-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-all">
+                    <i data-lucide="code" class="w-4 h-4"></i> Practice & Evaluator
+                </button>
+                <button data-tab="analytics-tab" class="tab-trigger py-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-all">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Progress & Stats
+                </button>
+            </div>
+            <div id="topic-tags" class="hidden sm:flex gap-1.5 text-xs text-slate-400">
+                <!-- Dynamic topic badges -->
+            </div>
+        </div>
+
+        <!-- Workspace content (scrollable) -->
+        <div class="flex-1 overflow-y-auto p-6 relative">
+            
+            <!-- TAB 1: Learn Syllabus -->
+            <div id="learn-tab" class="tab-content active prose max-w-4xl mx-auto py-4">
+                <!-- Syllabus text rendered via Marked.js -->
+            </div>
+
+            <!-- TAB 2: Practice & Evaluator -->
+            <div id="practice-tab" class="tab-content h-full flex flex-col">
+                <div class="flex-1 glass-card rounded-xl border border-slate-800 overflow-hidden flex flex-col h-full min-h-[500px]">
+                    <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+                            <span>Streamlit AI Evaluator Backend Sandbox</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="iframe-src-indicator">Target: Local Dev</span>
+                            <button id="reload-iframe-btn" class="p-1 hover:text-white rounded" title="Reload Evaluator Sandbox">
+                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Streamlit embed Container -->
+                    <div class="flex-1 w-full bg-slate-950 relative">
+                        <iframe id="evaluator-iframe" src="" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>
+                        
+                        <!-- Overlay when URL configuration is invalid -->
+                        <div id="iframe-overlay-config" class="hidden absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center text-center p-6 z-20">
+                            <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-500 mb-4 animate-bounce"></i>
+                            <h3 class="font-bold text-lg text-slate-200 mb-2">Evaluator Sandbox Offline</h3>
+                            <p class="text-sm text-slate-400 max-w-md mb-6">
+                                The portal requires the Streamlit backend URL to be configured. Configure it in settings to access AI code reviews.
+                            </p>
+                            <button id="setup-backend-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+                                <i data-lucide="settings" class="w-4 h-4"></i> Configure Backend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Progress & Stats -->
+            <div id="analytics-tab" class="tab-content max-w-5xl mx-auto py-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Stat Card 1 -->
+                    <div class="p-6 rounded-xl glass-card border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-bold">Completion Rate</span>
+                            <h3 id="stat-rate" class="text-3xl font-extrabold text-slate-100 mt-1">0%</h3>
+                        </div>
+                        <div class="p-4 bg-indigo-500/10 rounded-xl text-indigo-400">
+                            <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                        </div>
+                    </div>
+                    <!-- Stat Card 2 -->
+                    <div class="p-6 rounded-xl glass-card border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-bold">Days Mastered</span>
+                            <h3 id="stat-completed" class="text-3xl font-extrabold text-slate-100 mt-1">0 / 90</h3>
+                        </div>
+                        <div class="p-4 bg-sky-500/10 rounded-xl text-sky-400">
+                            <i data-lucide="calendar" class="w-8 h-8"></i>
+                        </div>
+                    </div>
+                    <!-- Stat Card 3 -->
+                    <div class="p-6 rounded-xl glass-card border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-bold">Average SDE Score</span>
+                            <h3 id="stat-avg-score" class="text-3xl font-extrabold text-slate-100 mt-1">0 / 100</h3>
+                        </div>
+                        <div class="p-4 bg-purple-500/10 rounded-xl text-purple-400">
+                            <i data-lucide="award" class="w-8 h-8"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Left: Sync Status details -->
+                    <div class="p-6 rounded-xl glass-card border border-slate-800 h-fit lg:col-span-1">
+                        <h4 class="font-bold text-slate-200 border-b border-slate-800 pb-3 mb-4 flex items-center gap-2">
+                            <i data-lucide="cloud" class="w-5 h-5 text-indigo-400"></i> Cloud Storage Sync
+                        </h4>
+                        
+                        <div class="space-y-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Connection:</span>
+                                <span id="sync-connection-info" class="font-bold text-amber-500">Not Connected</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Candidate ID:</span>
+                                <span id="sync-userid-info" class="font-mono text-slate-300">N/A</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Local Cache Items:</span>
+                                <span id="sync-cache-info" class="text-slate-300">0 records</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex flex-col gap-2">
+                            <button id="manual-pull-cloud-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700">
+                                <i data-lucide="download" class="w-4 h-4"></i> Pull Cloud Progress
+                            </button>
+                            <button id="manual-push-cloud-btn" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+                                <i data-lucide="upload" class="w-4 h-4"></i> Push Cache to Cloud
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Submission Log Table -->
+                    <div class="p-6 rounded-xl glass-card border border-slate-800 lg:col-span-2">
+                        <h4 class="font-bold text-slate-200 border-b border-slate-800 pb-3 mb-4 flex items-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> Evaluation History Logs
+                        </h4>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-slate-400 uppercase bg-slate-900 border border-slate-800">
+                                    <tr>
+                                        <th class="px-4 py-3">Day</th>
+                                        <th class="px-4 py-3">Topic Title</th>
+                                        <th class="px-4 py-3 text-center">Score</th>
+                                        <th class="px-4 py-3 text-center">Status</th>
+                                        <th class="px-4 py-3">Last Checked</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-log-table" class="divide-y divide-slate-800">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-slate-500">No submissions found. Start a practice challenge.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SETTINGS & SUPABASE CONFIGURATION MODAL -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-200 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-indigo-500"></i> Portal Configuration
+                </h3>
+                <button id="close-settings-modal" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+                <!-- Streamlit Connection -->
+                <div>
+                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wide mb-2">Streamlit AI Evaluator</h4>
+                    <label for="streamlit-url-input" class="block text-sm text-slate-400 mb-1">Deployment URL</label>
+                    <input id="streamlit-url-input" type="url" placeholder="http://localhost:8501" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <p class="text-[10px] text-slate-500 mt-1">Host locally or paste your Streamlit Community Cloud app URL.</p>
+                </div>
+                
+                <hr class="border-slate-800">
+
+                <!-- User ID Setup -->
+                <div>
+                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wide mb-2">Candidate Context</h4>
+                    <label for="username-input" class="block text-sm text-slate-400 mb-1">User Identifier</label>
+                    <input id="username-input" type="text" placeholder="candidate_sde_user" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <p class="text-[10px] text-slate-500 mt-1">Used to isolate your scores on the shared Supabase backend.</p>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Supabase Cloud Setup -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wide">Supabase Database Integration</h4>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-600" id="modal-supabase-indicator"></span>
+                            <span class="text-[10px] text-slate-500 font-semibold" id="modal-supabase-text">Disconnected</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="supabase-url-input" class="block text-sm text-slate-400 mb-1">API URL</label>
+                        <input id="supabase-url-input" type="text" placeholder="https://your-project.supabase.co" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label for="supabase-key-input" class="block text-sm text-slate-400 mb-1">Anon API Key</label>
+                        <input id="supabase-key-input" type="password" placeholder="your-anon-key" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    
+                    <div class="p-3 bg-slate-950/80 border border-slate-800/80 rounded-lg text-[11px] text-slate-500 flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <span>Provides persistent saving across devices. Ensure you run the initialization script in the `schema.sql` file in your database manager beforehand.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-950/30 border-t border-slate-800 flex justify-end gap-3">
+                <button id="reset-settings-btn" class="px-4 py-2 border border-slate-850 text-slate-400 hover:text-white rounded-lg text-sm transition-colors">Reset Defaults</button>
+                <button id="save-settings-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-lg shadow-indigo-600/10">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lucide icons runner -->
+    <script>
+        // Init Lucide initially
+        lucide.createIcons();
+    </script>
+    <!-- App entry point logic script -->
+    <script src="app.js"></script>
+</body>
+</html>
