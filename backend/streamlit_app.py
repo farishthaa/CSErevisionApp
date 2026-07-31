@@ -178,6 +178,7 @@ def load_content():
 def get_keys():
     """Retrieve keys from environment variable, streamlit secrets, or session state fallback."""
     gemini_key = os.getenv("GEMINI_API_KEY") or st.session_state.get("GEMINI_API_KEY", "")
+    openai_key = os.getenv("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY", "")
     supabase_url = os.getenv("SUPABASE_URL") or st.session_state.get("SUPABASE_URL", "")
     supabase_key = os.getenv("SUPABASE_KEY") or st.session_state.get("SUPABASE_KEY", "")
     
@@ -185,6 +186,8 @@ def get_keys():
     try:
         if not gemini_key and "GEMINI_API_KEY" in st.secrets:
             gemini_key = st.secrets["GEMINI_API_KEY"]
+        if not openai_key and "OPENAI_API_KEY" in st.secrets:
+            openai_key = st.secrets["OPENAI_API_KEY"]
         if not supabase_url and "SUPABASE_URL" in st.secrets:
             supabase_url = st.secrets["SUPABASE_URL"]
         if not supabase_key and "SUPABASE_KEY" in st.secrets:
@@ -192,7 +195,7 @@ def get_keys():
     except Exception:
         pass
         
-    return gemini_key, supabase_url, supabase_key
+    return gemini_key, openai_key, supabase_url, supabase_key
 
 # --- Initialization ---
 content_data = load_content()
@@ -220,19 +223,46 @@ if not day_content:
 challenge = day_content.get("coding_challenge", {})
 
 # Retrieve keys
-gemini_key, supabase_url, supabase_key = get_keys()
+gemini_key, openai_key, supabase_url, supabase_key = get_keys()
 
 # --- Sidebar Configuration ---
 with st.sidebar:
     st.header("🔑 API Configurations")
     st.caption("Environment variables or secrets will populate these automatically. Otherwise, input them manually below.")
     
+    # Active LLM Selection
+    engine_options = []
+    if openai_key:
+        engine_options.append("OpenAI (gpt-4o-mini)")
+    if gemini_key:
+        engine_options.append("Gemini (gemini-3.5-flash)")
+    if not engine_options:
+        engine_options = ["OpenAI (gpt-4o-mini)", "Gemini (gemini-3.5-flash)"]
+        
+    active_engine = st.selectbox(
+        "Active LLM Engine",
+        options=engine_options,
+        index=0,
+        help="Choose the model used to grade submissions"
+    )
+    
+    # OpenAI Key Form
+    form_openai = st.text_input(
+        "OpenAI API Key",
+        value=openai_key if openai_key else "",
+        type="password",
+        help="Required for OpenAI Code Evaluation"
+    )
+    if form_openai:
+        st.session_state["OPENAI_API_KEY"] = form_openai
+        openai_key = form_openai
+        
     # Gemini Key Form
     form_gemini = st.text_input(
         "Google Gemini API Key",
         value=gemini_key if gemini_key else "",
         type="password",
-        help="Required for AI Code Evaluation"
+        help="Required for Gemini Code Evaluation"
     )
     if form_gemini:
         st.session_state["GEMINI_API_KEY"] = form_gemini
@@ -265,10 +295,16 @@ with st.sidebar:
     st.write(f"**User ID:** `{user_id}`")
     
     # Status badges
-    if gemini_key:
-        st.success("✅ Gemini Connected")
+    if "OpenAI" in active_engine:
+        if openai_key:
+            st.success("✅ OpenAI Connected")
+        else:
+            st.warning("⚠️ OpenAI Key Missing")
     else:
-        st.warning("⚠️ Gemini Key Missing")
+        if gemini_key:
+            st.success("✅ Gemini Connected")
+        else:
+            st.warning("⚠️ Gemini Key Missing")
         
     if supabase_url and supabase_key:
         st.success("✅ Supabase Connected")
@@ -323,76 +359,96 @@ with col2:
 
 # --- Action Logic: Evaluation & Sync ---
 if submit_btn:
-    if not gemini_key:
-        st.error("❌ Cannot evaluate. Google Gemini API key is missing. Add it in the sidebar to proceed.")
-    else:
-        with st.spinner("🕵️ Senior Tech Lead is reviewing your code..."):
-            # Initialize Gemini API Client
-            client = genai.Client(api_key=gemini_key)
-            
-            prompt = f"""
-            Target Challenge: {challenge.get('title')}
-            Target Day: {day_id}
-            
-            Challenge Context & Description:
-            {challenge.get('description')}
-            
-            Starter Template Provided:
-            {challenge.get('starter_code')}
-            
-            ------------------------------------------
-            STUDENT'S SUBMITTED CODE:
-            ```python
-            {code_submission}
-            ```
-            
-            STUDENT'S THEORETICAL ANALYSIS / PROOF:
-            {theoretical_proof}
-            ------------------------------------------
-            """
-            
-            system_instruction = (
-                "Act as a strict Senior Tech Lead. Evaluate the student's submission for:\n"
-                "1. Functional Correctness (40% weight)\n"
-                "2. Efficiency & Complexity (30% weight) - Must evaluate Big-O proofs\n"
-                "3. Code Cleanliness (20% weight) - Check PEP8, naming conventions, docstrings\n"
-                "4. Theoretical Rigor (10% weight) - Look for solid conceptual explanations\n\n"
-                "Provide a total integer score out of 100. Be strict!\n\n"
-                "GRADUATED RESPONSE RULES:\n"
-                "- If the Score is LESS THAN 85%:\n"
-                "  - State that they failed to meet requirements (< 85%).\n"
-                "  - You MUST construct a Socratic Hint (`socratic_hint`) that points out the failing edge case, logic bug, complexity bottleneck, or memory leak.\n"
-                "  - DO NOT give the direct refactored code or direct fix. The field `refactored_code` MUST remain empty.\n"
-                "  - Set `passed = false`.\n"
-                "- If the Score is 85% OR GREATER:\n"
-                "  - Praise their excellent engineering standard.\n"
-                "  - You MUST write the production-grade, optimal, and comments-documented refactored solution inside the `refactored_code` field.\n"
-                "  - Include the token '[PASSED]' inside your feedback summaries.\n"
-                "  - Set `passed = true`."
-            )
-            
-            try:
-                # Call Gemini API with structured outputs
-                response = client.models.generate_content(
-                    model='gemini-3.5-flash',
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        response_mime_type="application/json",
-                        response_schema=EvaluationResult,
-                        temperature=0.1,
+    prompt = f"""
+    Target Challenge: {challenge.get('title')}
+    Target Day: {day_id}
+    
+    Challenge Context & Description:
+    {challenge.get('description')}
+    
+    Starter Template Provided:
+    {challenge.get('starter_code')}
+    
+    ------------------------------------------
+    STUDENT'S SUBMITTED CODE:
+    ```python
+    {code_submission}
+    ```
+    
+    STUDENT'S THEORETICAL ANALYSIS / PROOF:
+    {theoretical_proof}
+    ------------------------------------------
+    """
+    
+    system_instruction = (
+        "Act as a strict Senior Tech Lead. Evaluate the student's submission for:\n"
+        "1. Functional Correctness (40% weight)\n"
+        "2. Efficiency & Complexity (30% weight) - Must evaluate Big-O proofs\n"
+        "3. Code Cleanliness (20% weight) - Check PEP8, naming conventions, docstrings\n"
+        "4. Theoretical Rigor (10% weight) - Look for solid conceptual explanations\n\n"
+        "Provide a total integer score out of 100. Be strict!\n\n"
+        "GRADUATED RESPONSE RULES:\n"
+        "- If the Score is LESS THAN 85%:\n"
+        "  - State that they failed to meet requirements (< 85%).\n"
+        "  - You MUST construct a Socratic Hint (`socratic_hint`) that points out the failing edge case, logic bug, complexity bottleneck, or memory leak.\n"
+        "  - DO NOT give the direct refactored code or direct fix. The field `refactored_code` MUST remain empty.\n"
+        "  - Set `passed = false`.\n"
+        "- If the Score is 85% OR GREATER:\n"
+        "  - Praise their excellent engineering standard.\n"
+        "  - You MUST write the production-grade, optimal, and comments-documented refactored solution inside the `refactored_code` field.\n"
+        "  - Include the token '[PASSED]' inside your feedback summaries.\n"
+        "  - Set `passed = true`."
+    )
+    
+    if "OpenAI" in active_engine:
+        if not openai_key:
+            st.error("❌ Cannot evaluate. OpenAI API key is missing. Add it in the sidebar to proceed.")
+        else:
+            with st.spinner("🕵️ Senior Tech Lead is reviewing your code using OpenAI..."):
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(api_key=openai_key)
+                    
+                    completion = client.beta.chat.completions.parse(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": system_instruction},
+                            {"role": "user", "content": prompt}
+                        ],
+                        response_format=EvaluationResult,
+                        temperature=0.1
                     )
-                )
-                
-                # Parse structured JSON output
-                res_data = json.loads(response.text)
-                
-                st.session_state["eval_result"] = res_data
-                st.success("✅ Code evaluation complete!")
-                
-            except Exception as e:
-                st.error(f"Failed to evaluate submission: {e}")
-                st.session_state["eval_result"] = None
+                    
+                    res_data = json.loads(completion.choices[0].message.content)
+                    st.session_state["eval_result"] = res_data
+                    st.success("✅ Code evaluation complete!")
+                except Exception as e:
+                    st.error(f"Failed to evaluate submission with OpenAI: {e}")
+                    st.session_state["eval_result"] = None
+    else: # Gemini
+        if not gemini_key:
+            st.error("❌ Cannot evaluate. Google Gemini API key is missing. Add it in the sidebar to proceed.")
+        else:
+            with st.spinner("🕵️ Senior Tech Lead is reviewing your code using Gemini..."):
+                try:
+                    client = genai.Client(api_key=gemini_key)
+                    response = client.models.generate_content(
+                        model='gemini-3.5-flash',
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            response_mime_type="application/json",
+                            response_schema=EvaluationResult,
+                            temperature=0.1,
+                        )
+                    )
+                    
+                    res_data = json.loads(response.text)
+                    st.session_state["eval_result"] = res_data
+                    st.success("✅ Code evaluation complete!")
+                except Exception as e:
+                    st.error(f"Failed to evaluate submission with Gemini: {e}")
+                    st.session_state["eval_result"] = None
 
 # --- Display Results ---
 if "eval_result" in st.session_state and st.session_state["eval_result"]:
