@@ -53,6 +53,16 @@ st.markdown(
         color: #f3f4f6 !important;
     }
     
+    /* Reset alert and notification text to inherit theme colors for readability */
+    div[role="alert"], 
+    div[role="alert"] *, 
+    div[data-testid="stNotification"], 
+    div[data-testid="stNotification"] *, 
+    .stAlert, 
+    .stAlert * {
+        color: inherit !important;
+    }
+    
     /* Metric Card Styling */
     div[data-testid="stMetricValue"] {
         color: #38bdf8 !important;
