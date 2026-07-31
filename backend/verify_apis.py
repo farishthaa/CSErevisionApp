@@ -96,7 +96,7 @@ try:
     }
     
     print("Attempting to UPSERT test record into 'sde_portal_progress' table...")
-    upsert_res = supabase_client.table("sde_portal_progress").upsert(db_data).execute()
+    upsert_res = supabase_client.table("sde_portal_progress").upsert(db_data, on_conflict="user_id,day_id").execute()
     print("✅ Supabase UPSERT Success!")
     
     print("Attempting to SELECT test record...")

@@ -480,7 +480,7 @@ if "eval_result" in st.session_state and st.session_state["eval_result"]:
                 "code_submission": code_submission,
                 "feedback": result.get("socratic_hint") if not passed else "Passed. " + result.get("functional_correctness_feedback")
             }
-            supabase_client.table("sde_portal_progress").upsert(db_data).execute()
+            supabase_client.table("sde_portal_progress").upsert(db_data, on_conflict="user_id,day_id").execute()
             db_sync_status = "Synced Successfully ✅"
         except Exception as ex:
             db_sync_status = f"Failed to sync: {ex} ❌"
