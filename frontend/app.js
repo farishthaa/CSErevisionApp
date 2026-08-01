@@ -2,7 +2,7 @@
 
 // --- Configuration Defaults ---
 const DEFAULT_CONFIG = {
-    streamlit_url: 'http://localhost:8501',
+    streamlit_url: 'https://cserevisionapp-bbzbwfqnc9rzgrc9w6vhzw.streamlit.app',
     username: 'candidate_sde_user',
     supabase_url: '',
     supabase_key: ''
