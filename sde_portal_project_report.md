@@ -15,6 +15,8 @@ The code is organized as a decoupled full-stack architecture. To access these fi
 ├── schema.sql                    <- SQL schema for Supabase Database
 ├── .gitignore                    <- Excludes virtual environments and keys
 ├── .env.example                  <- Root configuration template
+├── .streamlit/
+│   └── config.toml               <- Root Streamlit CORS/frame config
 ├── frontend/
 │   ├── index.html                <- Tailwind CSS v3 dark-theme dashboard UI
 │   ├── app.js                    <- Handles LocalStorage and postMessage sync
@@ -24,7 +26,9 @@ The code is organized as a decoupled full-stack architecture. To access these fi
     ├── requirements.txt          <- Python package dependencies
     ├── content.json              <- Backend standalone curriculum copy
     ├── verify_apis.py            <- Connection diagnostic test utility
-    └── .env.example              <- Backend configuration template
+    ├── .env.example              <- Backend configuration template
+    └── .streamlit/
+        └── config.toml           <- Backend Streamlit CORS/frame config
 ```
 
 ---
@@ -118,3 +122,21 @@ Simply update this JSON file, run a Git commit and push, and the website will im
 If you want to offer students top-tier coding evaluations (e.g. detecting complex memory leaks or architecture flaws), you can upgrade the active models:
 * **OpenAI `gpt-4o`**: Highly advanced reasoning, but more expensive ($\approx$ **$0.01 per grading**).
 * **Claude 3.5 Sonnet** (via Anthropic API): The gold standard for coding explanations. Costs $\approx$ **$0.015 per grading**. To integrate Sonnet, we would install the `anthropic` SDK and add a third engine option in `streamlit_app.py`.
+
+---
+
+## 6. Troubleshooting Logs & Solutions
+
+Below is the historical audit trail of errors encountered during the development and deployment of the portal, along with their resolutions:
+
+| # | Bug / Issue | Cause | Resolution |
+| :--- | :--- | :--- | :--- |
+| **1** | Windows compilation stubs blocker | Windows default App Execution Aliases redirect `python` to Microsoft Store. | Run development commands explicitly via `uv run` to bypass PATH execution stubs. |
+| **2** | Sandbox DNS resolution failure | Transient DNS drop or blocked requests during `pip install pillow`. | Re-ran installation routines using `uv pip` which features automatic connection retries. |
+| **3** | Git push blocked (GH013) | GitHub Push Protection detected live API keys committed to `backend/.env.example`. | Moved real credentials to gitignored `.env`, sanitised template files, and ran `git commit --amend` to rewrite commit history. |
+| **4** | Supabase unique constraint violation | PostgREST default `upsert` conflicts on the primary key `id` rather than composite user keys. | Modified Python upsert statements to explicitly target the composite key: `on_conflict="user_id,day_id"`. |
+| **5** | White text readability issues | Global CSS rules forced `color: #f3f4f6 !important` on all text, making alert boxes white on white. | Appended alert overrides (`div[role="alert"] * { color: inherit !important; }`) to restore native contrast levels. |
+| **6** | Text area background overflow | Streamlit textareas default to light mode background in embedded context. | Targeted inner elements directly: `div[data-baseweb="textarea"] textarea { background-color: #1e293b !important; }`. |
+| **7** | Gemini 404 Deprecation | The model `gemini-2.5-flash` was deprecated for new AI Studio developer keys. | Migrated the python SDK backend model pointer to the active **`gemini-3.5-flash`**. |
+| **8** | OpenAI 429 Credit Exhaustion | Configured OpenAI developer key did not have active prepaid billing credits. | Upgraded backend to be **Dual-Engine**, allowing users to toggle between OpenAI and Gemini in the sidebar. |
+| **9** | Iframe loop redirect error | Strict browser cookie constraints and missing URL queries when embedding in external frames. | Appended `embed=true` in `app.js` iframe URL builder and created `.streamlit/config.toml` files to disable CORS and XSRF blocking. |
