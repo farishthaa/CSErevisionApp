@@ -246,63 +246,67 @@ with st.sidebar:
         help="Choose the model used to grade submissions"
     )
     
-    # OpenAI Key Form
-    openai_placeholder = "••••••••••••••••" if openai_key else "Enter your OpenAI key"
-    form_openai = st.text_input(
-        "OpenAI API Key",
-        value="",
-        type="password",
-        placeholder=openai_placeholder,
-        help="Optional: Input a custom key to override the system key."
-    )
-    if form_openai:
-        st.session_state["OPENAI_API_KEY"] = form_openai
-        openai_key = form_openai
+    # Hide key fields inside a collapsed expander to keep the UI clean and secure for students
+    with st.expander("⚙️ Custom Keys & Overrides (Advanced)"):
+        st.caption("Input custom credentials to override the default system configurations.")
         
-    # Gemini Key Form
-    gemini_placeholder = "••••••••••••••••" if gemini_key else "Enter your Gemini key"
-    form_gemini = st.text_input(
-        "Google Gemini API Key",
-        value="",
-        type="password",
-        placeholder=gemini_placeholder,
-        help="Optional: Input a custom key to override the system key."
-    )
-    if form_gemini:
-        st.session_state["GEMINI_API_KEY"] = form_gemini
-        gemini_key = form_gemini
+        # OpenAI Key Form
+        openai_placeholder = "••••••••••••••••" if openai_key else "Enter your OpenAI key"
+        form_openai = st.text_input(
+            "OpenAI API Key",
+            value="",
+            type="password",
+            placeholder=openai_placeholder,
+            help="Optional: Input a custom key to override the system key."
+        )
+        if form_openai:
+            st.session_state["OPENAI_API_KEY"] = form_openai
+            openai_key = form_openai
+            
+        # Gemini Key Form
+        gemini_placeholder = "••••••••••••••••" if gemini_key else "Enter your Gemini key"
+        form_gemini = st.text_input(
+            "Google Gemini API Key",
+            value="",
+            type="password",
+            placeholder=gemini_placeholder,
+            help="Optional: Input a custom key to override the system key."
+        )
+        if form_gemini:
+            st.session_state["GEMINI_API_KEY"] = form_gemini
+            gemini_key = form_gemini
+            
+        # Supabase Url Form
+        supa_url_placeholder = "https://your-project.supabase.co"
+        if supabase_url:
+            # Mask the middle of the URL for additional database obscurity
+            parts = supabase_url.split("//")
+            if len(parts) > 1:
+                domain = parts[1]
+                supa_url_placeholder = f"https://{domain[:4]}...{domain[-12:]}"
         
-    # Supabase Url Form
-    supa_url_placeholder = "https://your-project.supabase.co"
-    if supabase_url:
-        # Mask the middle of the URL for additional database obscurity
-        parts = supabase_url.split("//")
-        if len(parts) > 1:
-            domain = parts[1]
-            supa_url_placeholder = f"https://{domain[:4]}...{domain[-12:]}"
-    
-    form_supa_url = st.text_input(
-        "Supabase URL",
-        value="",
-        placeholder=supa_url_placeholder,
-        help="Optional: Input custom URL to override system configuration."
-    )
-    if form_supa_url:
-        st.session_state["SUPABASE_URL"] = form_supa_url
-        supabase_url = form_supa_url
-        
-    # Supabase Key Form
-    supa_key_placeholder = "••••••••••••••••" if supabase_key else "your-anon-key"
-    form_supa_key = st.text_input(
-        "Supabase Anon Key",
-        value="",
-        type="password",
-        placeholder=supa_key_placeholder,
-        help="Optional: Input custom Key to override system configuration."
-    )
-    if form_supa_key:
-        st.session_state["SUPABASE_KEY"] = form_supa_key
-        supabase_key = form_supa_key
+        form_supa_url = st.text_input(
+            "Supabase URL",
+            value="",
+            placeholder=supa_url_placeholder,
+            help="Optional: Input custom URL to override system configuration."
+        )
+        if form_supa_url:
+            st.session_state["SUPABASE_URL"] = form_supa_url
+            supabase_url = form_supa_url
+            
+        # Supabase Key Form
+        supa_key_placeholder = "••••••••••••••••" if supabase_key else "your-anon-key"
+        form_supa_key = st.text_input(
+            "Supabase Anon Key",
+            value="",
+            type="password",
+            placeholder=supa_key_placeholder,
+            help="Optional: Input custom Key to override system configuration."
+        )
+        if form_supa_key:
+            st.session_state["SUPABASE_KEY"] = form_supa_key
+            supabase_key = form_supa_key
         
     st.divider()
     st.subheader("📋 Session Info")
