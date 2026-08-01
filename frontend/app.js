@@ -451,7 +451,7 @@ function setupEvaluatorIframeUrl() {
     
     // Append routing query params for dynamic streamlit context
     const cleanStreamlitUrl = streamlit_url.endsWith('/') ? streamlit_url.slice(0, -1) : streamlit_url;
-    const finalUrl = `${cleanStreamlitUrl}/?day_id=${appState.activeDay}&user_id=${encodeURIComponent(username)}`;
+    const finalUrl = `${cleanStreamlitUrl}/?embed=true&day_id=${appState.activeDay}&user_id=${encodeURIComponent(username)}`;
     
     // Only reload/change source if it's different to prevent double-load flickering
     if (evaluatorIframe.src !== finalUrl) {
