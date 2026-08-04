@@ -1,0 +1,46 @@
+{
+  "days": {
+    "day_1": {
+      "day": 1,
+      "title": "Python Variables, Basic Maths, and Functions",
+      "topics": ["Basics", "Variables", "Functions", "PEP8"],
+      "difficulty": "Easy",
+      "estimated_time": "30 mins",
+      "learning_material": "# Python Basics: Variables & Functions\n\nWelcome to your first day! Today, we will study variables, basic arithmetic operators, and how to write reusable functions in Python.\n\n### Writing a Function in Python\nFunctions are defined using the `def` keyword. Variables do not require explicit type declarations in Python, but you can use type hints (`var: type`) to improve code documentation.\n\n```python\ndef greet_user(name: str) -> str:\n    \"\"\"Docstring explaining what the function does.\"\"\"\n    return f\"Hello, {name}!\"\n```\n\n### Arithmetic Operations\n- Addition: `+`\n- Subtraction: `-`\n- Multiplication: `*`\n- Division: `/` (returns a float)\n- Floor Division: `//` (returns integer quotient)\n- Modulo: `%` (returns remainder)\n\n### Coding challenge format: WRITE CODE\nFor today's challenge, you must write two complete helper functions to process rectangle dimensions.",
+      "coding_challenge": {
+        "type": "write_code",
+        "title": "Implement Rectangle Area & Square Checks",
+        "description": "Implement two functions:\n1. `area_of_rectangle(width, height)`: Returns the float area of a rectangle. If either `width` or `height` is less than or equal to `0`, return `-1` to signal invalid dimensions.\n2. `is_square(width, height)`: Returns `True` if `width` equals `height` and both are greater than `0`. Returns `False` otherwise.",
+        "starter_code": "def area_of_rectangle(width: float, height: float) -> float:\n    # Write your code here\n    pass\n\ndef is_square(width: float, height: float) -> bool:\n    # Write your code here\n    pass"
+      }
+    },
+    "day_2": {
+      "day": 2,
+      "title": "Iterating Lists and Loops (Fill in the Blanks)",
+      "topics": ["Lists", "For Loops", "If-Else", "Fill in Blanks"],
+      "difficulty": "Easy",
+      "estimated_time": "35 mins",
+      "learning_material": "# Iterating Python Lists\n\nToday we learn about lists and how to filter elements using loops and conditionals.\n\n### Lists and Loops\nA list is declared using brackets: `my_list = [1, 2, 3]`. You can iterate through lists using a `for` loop:\n\n```python\nfor item in my_list:\n    print(item)\n```\n\n### Adding to Lists\nYou append elements to lists using the `.append()` method: `my_list.append(4)`.\n\n### Coding challenge format: FILL IN THE BLANKS\nReplace the triple underscores (`___`) in the editor with appropriate variables, loops, methods, or conditions to successfully complete the algorithm.",
+      "coding_challenge": {
+        "type": "fill_code",
+        "title": "Filter Even Numbers",
+        "description": "Replace the `___` placeholders to filter out odd numbers and return a new list containing only even integers.",
+        "starter_code": "def filter_evens(numbers_list):\n    result = []\n    for num in ___:\n        if num ___ 2 == 0:\n            ___.append(num)\n    return ___"
+      }
+    },
+    "day_3": {
+      "day": 3,
+      "title": "Try-Except Blocks (Troubleshoot & Debug)",
+      "topics": ["Exceptions", "Debugging", "Try-Except", "Troubleshoot"],
+      "difficulty": "Medium",
+      "estimated_time": "40 mins",
+      "learning_material": "# Exception Handling in Python\n\nExceptions occur when the Python interpreter encounters errors during runtime. We safeguard programs using `try` and `except` blocks.\n\n```python\ntry:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    result = None\n```\n\n### Coding challenge format: TROUBLESHOOT / DEBUG\nThe editor contains a broken block of Python code. It has multiple syntax and logical errors (invalid try blocks, incorrect variable ordering, wrong exception types). Diagnose and rewrite the code to make it function correctly.",
+      "coding_challenge": {
+        "type": "troubleshoot",
+        "title": "Debug Division Error Handler",
+        "description": "Fix the division processor code. It should divide `a` by `b` (`a / b`). If `b` is `0`, handle the `ZeroDivisionError` and return `None`. If `a` or `b` is not a number, catch the `TypeError` or `ValueError` and return the string `'Invalid Type'.` Ensure the code compiles and runs.",
+        "starter_code": "def divide_numbers(a, b)\n    try\n        return b / a\n    except zero:\n        print(\"Cannot divide\")\n        return 0\n    except valueror:\n        return \"Wrong type\""
+      }
+    }
+  }
+}
